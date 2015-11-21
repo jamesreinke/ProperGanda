@@ -1,0 +1,1 @@
+/Users/james/Spells/Maliki/Client/target/scala-2.11/maliki-fastopt.js
