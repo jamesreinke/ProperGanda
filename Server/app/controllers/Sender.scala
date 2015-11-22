@@ -1,4 +1,4 @@
-package modules
+package controllers
 
 import play.api.mvc.Controller
 import lola.interface._
