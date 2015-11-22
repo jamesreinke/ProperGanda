@@ -8,21 +8,46 @@ import anorm.SqlParser._
 import play.api.db.DB
 
 // A case class which represents the data from one table or many
-abstract class Maliki {
+abstract class Maliki(name: String) {
 	val id: Int
-	def values: List[Any]
-	def columns: List[Column]
-	val table: Table
+	val values: List[Any]
+	val columns: List[Column]
+	val table: Table = new Table(columns)
 }
 
-case class Person(val id: Int, val name: String, age: Int) extends Maliki {
-	val i = new Column("id", new Primary())
-	val n = new Column("name", new MText())
-	val a = new Column("age", new MInteger())
+case class Person(id: Int, name: String, age: Int) extends Maliki("Persons") {
 
-	def values = List((i, 1), (n, name), (a, age))
+	val values = List(id, name, age)
+	val i = new Column("id", Primary)
+	val n = new Column("name", MText)
+	val a = new Column("age", MInteger)
+	val columns = List(i, n, a)
+	private val table = new Table("Persons", columns)
+	def create: Boolean = {
 
-	val table = new Table("Persons", columns)
+	}
+
+}
+sealed trait Command
+case object Create extends Command
+case object Delete extends Command
+case object Insert extends Command
+case object Update extends Command
+
+
+object Statement {
+	def apply(x: Command, item: Maliki) x match {
+		DB.withConnection {
+			implicit session {
+				case Create => 
+				  SQL(s"""create table if not exist ${name} (${columns mkString ","})""")
+				case Delete => 
+				  SQL(s"""delete from ${name] where ${name.id} = ${item.id}""")
+				case Insert => 
+				  SQL(s"""insert into $[name} (${columns map {x => x.name} mkString ""})""")
+			}
+		}
+	}
 }
 
 class Table(name: String, columns: List[Column]) {
@@ -30,7 +55,7 @@ class Table(name: String, columns: List[Column]) {
 	/* Table generation statement */
 	def createTable: Unit = {
 		val statement = s"""
-							create table if not exists (${columns mkString ","});
+							create table if not exists ${name} (${columns mkString ","});
 							${indexString}
 						"""
 		println(statement)
@@ -76,12 +101,12 @@ class Table(name: String, columns: List[Column]) {
 						where
 							${name}.id = ${item.id}
 					"""
+		println(statement)
 		DB.withConnection {
 			implicit session => {
 				SQL(statement).execute()
 			}
 		}
-		println(statement)
 	}
 
 	def update(item: Maliki): Unit = {
@@ -93,12 +118,12 @@ class Table(name: String, columns: List[Column]) {
 							where
 								id = {id}
 						"""
+		println(statement)
 		DB.withConnection {
 			implicit session => {
 				SQL(statement).execute()
 			}
 		}
-		println(statement)
 
 	}
 

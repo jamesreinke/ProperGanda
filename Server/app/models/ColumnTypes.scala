@@ -2,12 +2,12 @@ package models
 
 
 sealed abstract class CType(val name: String)
-sealed case class Primary() extends CType("bigserial primary key")
-sealed case class MInteger() extends CType("int") 
-sealed case class MBoolean() extends CType("boolean")
-sealed case class MByte() extends CType("bytea")
-sealed case class MText() extends CType("text")
-sealed case class MTimeStamp() extends CType("timestamp")
+case object Primary extends CType("bigserial primary key")
+case object MInteger extends CType("int") 
+case object MBoolean extends CType("boolean")
+case object MByte extends CType("bytea")
+case object MText extends CType("text")
+case object MTimeStamp extends CType("timestamp")
 
 
 case class Column(name: String, cType: CType, index: Boolean = false) {
@@ -20,8 +20,8 @@ case class Column(name: String, cType: CType, index: Boolean = false) {
 	def indexString: String = index match {
 		case true => {
 			cType match {
-				case MInteger() => s"(${name});"
-				case MText() => s"using gin(to_tsvector('english', ${name}));"
+				case MInteger => s"(${name});"
+				case MText => s"using gin(to_tsvector('english', ${name}));"
 				case _ => s"(${name});"
 			}
 		}
