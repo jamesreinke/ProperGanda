@@ -40,14 +40,14 @@ object Statement {
 		DB.withConnection {
 			implicit session => x match {
 				case Create => SQL(s"""create table if not exist ${t.name} (${item.columns mkString ","})""")
-				case Delete => SQL(s"""delete from ${name} where ${t.name}.id = ${item.id}""")
-				case Insert => SQL(s"""insert into $[name} (${item.columns map {x => x.name} mkString ""})""")
+				case Delete => SQL(s"""delete from ${t.name} where ${t.name}.id = ${item.id}""")
+				case Insert => SQL(s"""insert into ${t.name} (${item.columns map {x => x.name} mkString ""})""")
 			}
 		}
 	}
 }
 
-class Table(name: String, columns: List[Column]) {
+class Table(val name: String, val columns: List[Column]) {
 
 	/* Table generation statement */
 	def createTable: Unit = {
