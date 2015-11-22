@@ -14,39 +14,34 @@ abstract class Maliki(name: String) {
 	val columns: List[Column]
 	val table: Table = new Table(name, columns)
 }
-
-case class Person(id: Int, name: String, age: Int) extends Maliki("Persons") {
-
-	val values = List(id, name, age)
-	val i = new Column("id", Primary)
-	val n = new Column("name", MText)
-	val a = new Column("age", MInteger)
-	val columns = List(i, n, a)
-
-}
+/* SQL Command Objects */
 sealed trait Command
 case object Create extends Command
 case object Delete extends Command
 case object Insert extends Command
 case object Update extends Command
+case object Select extends Command
 
 
 object Statement {
-	def apply(t: Table, x: Command, item: Maliki): Unit = {
+	def apply(t: Table, command: Command, item: Maliki): Unit = {
 		DB.withConnection {
-			implicit session => x match {
+			implicit session => command match {
 				case Create => SQL(s"""
 					create table if not exist ${t.name} 
-						(${item.columns mkString ","})""")
+						(${item.columns mkString ","})""").execute()
 				case Delete => SQL(s"""
 					delete from ${t.name} 
-						where ${t.name}.id = ${item.id}""")
+						where ${t.name}.id = ${item.id}""").execute()
 				case Insert => SQL(s"""
 					insert into ${t.name} 
-						(${item.columns map {x => x.name} mkString ""})""")
+						(${item.columns map {x => x.name} mkString ""})""").executeInsert()
 				case Update => SQL(s"""
 					update ${t.name} 
-						set ${item.values map { case(col, item) => "${col} = ${item}"} mkString ","}""")
+						set ${item.values map { case(col, item) => "${col} = ${item}"} mkString ","}""").executeUpdate()
+				case Select => SQL(s"""
+					select * from ${t.name}
+						where ${t.name}.id = ${item.id}""").execute()
 			}
 		}
 	}
@@ -82,15 +77,17 @@ class Table(val name: String, val columns: List[Column]) {
 	def delete(item: Maliki): Unit = Statement(this, Delete, item)
 
 	def update(item: Maliki): Unit = Statement(this, Update, item)
+
+
 	
 
 	/* Generates SQL index statements given columns */
-	private def indexString: String = {
+	def indexString: String = {
 		val zipped: List[(Column, Int)] = columns.zipWithIndex
 		zipped map 
 			{ case (column, index) => 
 				s"create index ${name}-${index} on ${name} ${column.indexString}" 
-			} mkString ","
+			} mkString ";"
 	}
 
 
