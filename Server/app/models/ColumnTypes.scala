@@ -17,12 +17,15 @@ case class Column(name: String, cType: CType, index: Boolean = false) {
 	/*
 		SQL Encoding for generating an index
 	*/
-	def indexString: String = {
-		cType match {
-			case MInteger() => s"(${name});"
-			case MText() => s"using gin(to_tsvector('english', ${name}));"
-			case _ => s"(${name});"
+	def indexString: String = index match {
+		case true => {
+			cType match {
+				case MInteger() => s"(${name});"
+				case MText() => s"using gin(to_tsvector('english', ${name}));"
+				case _ => s"(${name});"
+			}
 		}
+		case false => ""
 	}
 
 }
