@@ -36,15 +36,12 @@ case object Update extends Command
 
 
 object Statement {
-	def apply(x: Command, item: Maliki) x match {
+	def apply(t: Table, x: Command, item: Maliki): Unit = {
 		DB.withConnection {
-			implicit session {
-				case Create => 
-				  SQL(s"""create table if not exist ${name} (${columns mkString ","})""")
-				case Delete => 
-				  SQL(s"""delete from ${name] where ${name.id} = ${item.id}""")
-				case Insert => 
-				  SQL(s"""insert into $[name} (${columns map {x => x.name} mkString ""})""")
+			implicit session => x match {
+				case Create => SQL(s"""create table if not exist ${t.name} (${item.columns mkString ","})""")
+				case Delete => SQL(s"""delete from ${name} where ${t.name}.id = ${item.id}""")
+				case Insert => SQL(s"""insert into $[name} (${item.columns map {x => x.name} mkString ""})""")
 			}
 		}
 	}
