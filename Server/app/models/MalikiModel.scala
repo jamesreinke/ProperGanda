@@ -12,7 +12,7 @@ abstract class Maliki(name: String) {
 	val id: Int
 	val values: List[Any]
 	val columns: List[Column]
-	val table: Table = new Table(columns)
+	val table: Table = new Table(name, columns)
 }
 
 case class Person(id: Int, name: String, age: Int) extends Maliki("Persons") {
@@ -22,10 +22,6 @@ case class Person(id: Int, name: String, age: Int) extends Maliki("Persons") {
 	val n = new Column("name", MText)
 	val a = new Column("age", MInteger)
 	val columns = List(i, n, a)
-	private val table = new Table("Persons", columns)
-	def create: Boolean = {
-
-	}
 
 }
 sealed trait Command
@@ -39,9 +35,18 @@ object Statement {
 	def apply(t: Table, x: Command, item: Maliki): Unit = {
 		DB.withConnection {
 			implicit session => x match {
-				case Create => SQL(s"""create table if not exist ${t.name} (${item.columns mkString ","})""")
-				case Delete => SQL(s"""delete from ${t.name} where ${t.name}.id = ${item.id}""")
-				case Insert => SQL(s"""insert into ${t.name} (${item.columns map {x => x.name} mkString ""})""")
+				case Create => SQL(s"""
+					create table if not exist ${t.name} 
+						(${item.columns mkString ","})""")
+				case Delete => SQL(s"""
+					delete from ${t.name} 
+						where ${t.name}.id = ${item.id}""")
+				case Insert => SQL(s"""
+					insert into ${t.name} 
+						(${item.columns map {x => x.name} mkString ""})""")
+				case Update => SQL(s"""
+					update ${t.name} 
+						set ${item.values map { case(col, item) => "${col} = ${item}"} mkString ","}""")
 			}
 		}
 	}
@@ -51,78 +56,33 @@ class Table(val name: String, val columns: List[Column]) {
 
 	/* Table generation statement */
 	def createTable: Unit = {
-		val statement = s"""
-							create table if not exists ${name} (${columns mkString ","});
-							${indexString}
-						"""
-		println(statement)
 		DB.withConnection {
 			implicit session => {
-				SQL(statement).execute()
+				SQL(s"""
+						create table if not exists ${name} (${columns mkString ","});
+						${indexString}
+					""").execute()
 			}
 		}
 	}
 
 	def deleteTable: Unit = {
-		val statement = s"""
-							drop table ${name} if exists;
-						"""
-		println(statement)
 		DB.withConnection {
 			implicit session => {
-				SQL(statement).execute()
-			}
-		}
-	}
-
-	def add(item: Maliki): Unit = {
-		val statement = s"""
-							insert into ${name}
-							 	(${columns map {x => x.name} mkString ""})
-							 values 
-							 	(${item.values mkString ","})
-						"""
-		println(statement)
-		DB.withConnection {
-			implicit session => {
-				SQL(statement).execute()
-			}
-		}
-	}
-
-	def delete(item: Maliki): Unit = {
-		val statement = 
+				SQL(
 					s"""
-						delete from 
-							${name}
-						where
-							${name}.id = ${item.id}
-					"""
-		println(statement)
-		DB.withConnection {
-			implicit session => {
-				SQL(statement).execute()
+						drop table ${name} if exists;
+					""").execute()
 			}
 		}
 	}
 
-	def update(item: Maliki): Unit = {
-		val statement = s"""
-							update
-								${name}
-							set
-								${item.values map { case(col, item) => "${col} = ${item}"} mkString ","}
-							where
-								id = {id}
-						"""
-		println(statement)
-		DB.withConnection {
-			implicit session => {
-				SQL(statement).execute()
-			}
-		}
+	def add(item: Maliki): Unit = Statement(this, Create, item)
 
-	}
+	def delete(item: Maliki): Unit = Statement(this, Delete, item)
+
+	def update(item: Maliki): Unit = Statement(this, Update, item)
+	
 
 	/* Generates SQL index statements given columns */
 	private def indexString: String = {
